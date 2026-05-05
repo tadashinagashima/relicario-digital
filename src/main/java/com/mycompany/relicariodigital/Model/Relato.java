@@ -18,6 +18,17 @@ public class Relato {
     private String cronicaGerada;
     private Date dataRegistro;
 
+    //construtor padrão para o DAO
+    public Relato() {}
+
+    //construtor para testes com dummy data
+    public Relato(int idosoId, String textoBruto, String cronicaGerada) {
+        this.idosoId = idosoId;
+        this.textoBruto = textoBruto;
+        this.cronicaGerada = cronicaGerada;
+        this.dataRegistro = new Date();
+    }
+
     public int getId() {
         return id;
     }
