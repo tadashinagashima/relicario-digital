@@ -1,28 +1,25 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.mycompany.relicariodigital.DAO;
 
-import java.sql.Connection;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
-/**
- *
- * @author gyudi    
- */
 public class ConexaoBD {
-    
-    private static final String url = "";
-    private static final String usuario = "";
-    private static final String senha = ""; 
-    
-    public static Connection getConexao() {
+
+    private static final Path PASTA_DADOS = Paths.get("data");
+
+    public static Path getPastaDados() {
         try {
-            // Tenta a conexao com o banco de dados, caso as coisas estiverem
-            // corretas, printa uma mensagem de sucesso e retorna a conexao
-        } catch() {
-            // Caso der errado, printa uma mensagem de erro e printa o erro
-            // e retorna null
+            Files.createDirectories(PASTA_DADOS);
+        } catch (IOException e) {
+            System.err.println("Erro ao criar pasta de dados: " + e.getMessage());
         }
-    }   
+
+        return PASTA_DADOS;
+    }
+
+    public static Path getArquivo(String nomeArquivo) {
+        return getPastaDados().resolve(nomeArquivo);
+    }
 }

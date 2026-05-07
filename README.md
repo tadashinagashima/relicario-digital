@@ -1,15 +1,68 @@
-### 📋 Requisitos Funcionais
+# Relicario Digital
 
-* *RF01 - Gestão de Perfis (CRUD):* Cadastro, leitura, atualização e exclusão de perfis dos idosos participantes.
-* *RF02 - Interface de Entrevista:* Uma tela onde o sistema exibe perguntas guiadas e possui um campo de texto grande para que o idoso (ou um voluntário) digite as respostas brutas.
-* *RF03 - Processamento de História (Integração com IA):* O sistema captura o texto bruto da tela de entrevista, empacota em um formato JSON e envia para a API do Gemini. A API retorna o texto transformado em uma crônica, que é exibida em uma nova tela para revisão.
-* *RF04 - Persistência de Relatos:* Funcionalidade para salvar a crônica finalizada no SGBD, vinculando-a ao perfil do idoso que a relatou.
-* *RF05 - Mural/Acervo Digital:* Uma tela de listagem e busca onde é possível visualizar todos os perfis cadastrados e ler as histórias geradas e salvas no banco de dados.
+Projeto simples em Java Swing para registrar memorias de idosos participantes do TEDI.
 
----
+## Funcionalidades
 
-### ⭐ Requisitos Funcionais Extras
+- RF01: CRUD de perfis de idosos.
+- RF02: tela de entrevista com perguntas guia e campo grande para texto bruto.
+- RF03: processamento do texto com Gemini quando `GEMINI_API_KEY` estiver configurada.
+- RF04: salvamento da cronica revisada vinculada ao perfil.
+- RF05: acervo digital com listagem, busca e leitura de historias.
+- RF06: botoes para aumentar/diminuir fonte e ativar alto contraste.
+- RF07: exportacao de cronica para PDF simples e envio para impressao.
+- RF08: login basico de mediadores.
 
-* *RF06 - Módulo de Acessibilidade Visual:* Controles nativos na interface (como botões de atalho) que permitem aumentar/diminuir o tamanho geral das fontes e alternar o sistema para um "Modo de Alto Contraste", garantindo o uso confortável pelo público da terceira idade.
-* *RF07 - Exportação Física (Gerar PDF ou Imprimir):* Um botão na tela do acervo que permite pegar a crônica gerada pela IA e exportá-la como um documento PDF formatado ou enviá-la para a fila de impressão do sistema operacional, materializando a memória.
-* *RF08 - Login de Mediadores (Segurança Básica):* Uma tela inicial simples exigindo credenciais (usuário e senha) para os voluntários do projeto TEDI, prevenindo que idosos alterem, sobrescrevam ou apaguem acidentalmente os perfis uns dos outros durante as oficinas.
+## Login padrao
+
+- Usuario: `mediador`
+- Senha: `tedi123`
+
+Tambem e possivel trocar pelas variaveis de ambiente:
+
+- `TEDI_USUARIO`
+- `TEDI_SENHA`
+
+## Gemini
+
+Para usar a API real do Gemini:
+
+1. Crie uma chave no Google AI Studio.
+2. Configure a variavel de ambiente `GEMINI_API_KEY`.
+3. Reinicie o terminal ou a IDE antes de executar o projeto.
+
+```bash
+GEMINI_API_KEY=sua_chave_aqui
+```
+
+No Windows PowerShell, para testar na sessao atual:
+
+```powershell
+$env:GEMINI_API_KEY="sua_chave_aqui"
+mvn exec:java
+```
+
+O codigo da integracao esta em `GeminiService`. Ele monta um JSON com `contents` e `parts`, envia via POST para `models/gemini-2.5-flash:generateContent`, passa a chave no header `x-goog-api-key` e le o campo `text` retornado pela API.
+
+Se a chave nao existir, o sistema gera uma cronica local simples para fins de teste e apresentacao.
+
+## Persistencia
+
+Os dados sao gravados em arquivos CSV dentro da pasta `data/`.
+
+Essa escolha evita dependencias externas e deixa o projeto facil de executar em laboratorio. A classe `ConexaoBD` centraliza esse ponto, entao a persistencia pode ser trocada por JDBC depois.
+
+Os relatos possuem um ID interno global para controle do sistema, mas a numeracao exibida comeca em `Relato 1` para cada perfil.
+
+## Exportacao
+
+Os PDFs sao criados na pasta `exports/`.
+
+## Execucao
+
+Com Maven instalado:
+
+```bash
+mvn clean package
+mvn exec:java
+```

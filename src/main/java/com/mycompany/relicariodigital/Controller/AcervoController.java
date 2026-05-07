@@ -29,8 +29,14 @@ public class AcervoController {
     }
     
     public List<Relato> buscarHistoriasDoIdoso(int idosoEscolhido) {
-        
+        return relatoDAO.buscarPorIdoso(idosoEscolhido);
     }
-    
-    // Extra - public void exportarCronica(Relato relatoEscolhido);
+
+    public List<Relato> buscarHistoriasPorTexto(String termo) {
+        return relatoDAO.buscarPorTexto(termo);
+    }
+
+    public Idoso buscarIdoso(int idosoId) {
+        return idosoDAO.buscarPorId(idosoId);
+    }
 }

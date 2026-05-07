@@ -1,91 +1,216 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.mycompany.relicariodigital.DAO;
 
-import com.mycompany.relicariodigital.Model.Idoso;
 import com.mycompany.relicariodigital.Model.Relato;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-/**
- *
- * @author gyudi
- */
-
-// OBS: Não necessariamente precisamos já implementar o update e o delete de relato.
-// É recomendável, mas em relato, o mais importante no momento é focar no create e no read.
 public class RelatoDAO {
-    
-    // Create
+
+    private static final String ARQUIVO = "relatos.csv";
+
     public void salvarRelato(Relato relato) {
-        //obs: os nomes das colunas devem ser confirmados com o Daniel (DB)
-        String sql = "INSERT INTO relatos (idoso_id, texto_bruto, cronica_gerada, data_registro) VALUES (?, ?, ?, ?)";
+        List<Relato> relatos = listarTodos();
+        relato.setId(proximoId(relatos));
 
-        try (Connection conn = ConexaoBD.getConexao();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            //preenchendo os parâmetros do SQL
-            stmt.setInt(1, relato.getIdosoId());
-            stmt.setString(2, relato.getTextoBruto());
-            stmt.setString(3, relato.getCronicaGerada());
-            //converte a data do java para o formato do banco 
-            stmt.setTimestamp(4, new java.sql.Timestamp(System.currentTimeMillis()));
-
-            stmt.executeUpdate();
-            System.out.println("[RF04] Sucesso: Relato salvo no banco de dados.");
-
-        } catch (SQLException e) {
-            System.err.println("[RF04] Erro ao salvar relato: " + e.getMessage());
+        if (relato.getNumeroNoPerfil() <= 0) {
+            relato.setNumeroNoPerfil(proximoNumeroDoPerfil(relatos, relato.getIdosoId()));
         }
+
+        if (relato.getDataRegistro() == null) {
+            relato.setDataRegistro(new Date());
+        }
+
+        relatos.add(relato);
+        salvarTodos(relatos);
     }
-    
-    // Read
+
+    public List<Relato> listarTodos() {
+        List<Relato> relatos = new ArrayList<>();
+        Path arquivo = ConexaoBD.getArquivo(ARQUIVO);
+
+        if (!Files.exists(arquivo)) {
+            return relatos;
+        }
+
+        try {
+            List<String> linhas = Files.readAllLines(arquivo, StandardCharsets.UTF_8);
+
+            for (String linha : linhas) {
+                if (!linha.trim().isEmpty()) {
+                    relatos.add(converterLinhaParaRelato(linha));
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Erro ao listar relatos: " + e.getMessage());
+        }
+
+        preencherNumerosAntigos(relatos);
+        return relatos;
+    }
+
     public List<Relato> buscarPorIdoso(int idosoId) {
-        String sql = "SELECT * FROM relatos WHERE idoso_id = ?";
         List<Relato> listaRelatos = new ArrayList<>();
 
-        try (Connection conn = ConexaoBD.getConexao();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setInt(1, idosoId);
-            ResultSet rs = stmt.executeQuery();
-
-            while (rs.next()) {
-                Relato r = new Relato();
-                r.setId(rs.getInt("id"));
-                r.setIdosoId(rs.getInt("idoso_id"));
-                r.setTextoBruto(rs.getString("texto_bruto"));
-                r.setCronicaGerada(rs.getString("cronica_gerada"));
-                r.setDataRegistro(rs.getTimestamp("data_registro"));
-                listaRelatos.add(r);
+        for (Relato relato : listarTodos()) {
+            if (relato.getIdosoId() == idosoId) {
+                listaRelatos.add(relato);
             }
-        } catch (SQLException e) {
-            System.err.println("Erro ao buscar relatos: " + e.getMessage());
         }
+
         return listaRelatos;
     }
-    
-    // Update
-    public void atualizarCronica(Idoso idoso) {
-        String sql = "";
-        
-        try() {
-            
-        } catch() {
-            
+
+    public List<Relato> buscarPorTexto(String termo) {
+        List<Relato> resultado = new ArrayList<>();
+        String filtro = termo == null ? "" : termo.toLowerCase();
+
+        for (Relato relato : listarTodos()) {
+            String cronica = relato.getCronicaGerada() == null ? "" : relato.getCronicaGerada().toLowerCase();
+            String bruto = relato.getTextoBruto() == null ? "" : relato.getTextoBruto().toLowerCase();
+
+            if (cronica.contains(filtro) || bruto.contains(filtro)) {
+                resultado.add(relato);
+            }
+        }
+
+        return resultado;
+    }
+
+    public void atualizarCronica(Relato relatoAtualizado) {
+        List<Relato> relatos = listarTodos();
+
+        for (int i = 0; i < relatos.size(); i++) {
+            if (relatos.get(i).getId() == relatoAtualizado.getId()) {
+                relatos.set(i, relatoAtualizado);
+                break;
+            }
+        }
+
+        salvarTodos(relatos);
+    }
+
+    public void deletarRelato(int id) {
+        List<Relato> relatos = listarTodos();
+        relatos.removeIf(relato -> relato.getId() == id);
+        salvarTodos(relatos);
+    }
+
+    public void deletarPorIdoso(int idosoId) {
+        List<Relato> relatos = listarTodos();
+        relatos.removeIf(relato -> relato.getIdosoId() == idosoId);
+        salvarTodos(relatos);
+    }
+
+    private void salvarTodos(List<Relato> relatos) {
+        List<String> linhas = new ArrayList<>();
+
+        for (Relato relato : relatos) {
+            linhas.add(converterRelatoParaLinha(relato));
+        }
+
+        try {
+            Files.write(ConexaoBD.getArquivo(ARQUIVO), linhas, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            System.err.println("Erro ao salvar relatos: " + e.getMessage());
         }
     }
-    
-    // Delete
-    public void deletarRelato(int id) {
-        String sql = "";
-        
-        try() {
-            
-        } catch() {
-            
+
+    private int proximoId(List<Relato> relatos) {
+        int maiorId = 0;
+
+        for (Relato relato : relatos) {
+            if (relato.getId() > maiorId) {
+                maiorId = relato.getId();
+            }
         }
+
+        return maiorId + 1;
+    }
+
+    private int proximoNumeroDoPerfil(List<Relato> relatos, int idosoId) {
+        int maiorNumero = 0;
+
+        for (Relato relato : relatos) {
+            if (relato.getIdosoId() == idosoId && relato.getNumeroNoPerfil() > maiorNumero) {
+                maiorNumero = relato.getNumeroNoPerfil();
+            }
+        }
+
+        return maiorNumero + 1;
+    }
+
+    private void preencherNumerosAntigos(List<Relato> relatos) {
+        Map<Integer, Integer> maiorNumeroPorIdoso = new HashMap<>();
+
+        for (Relato relato : relatos) {
+            if (relato.getNumeroNoPerfil() > 0) {
+                maiorNumeroPorIdoso.put(relato.getIdosoId(), relato.getNumeroNoPerfil());
+            }
+        }
+
+        for (Relato relato : relatos) {
+            if (relato.getNumeroNoPerfil() <= 0) {
+                Integer maiorAtual = maiorNumeroPorIdoso.get(relato.getIdosoId());
+
+                if (maiorAtual == null) {
+                    maiorAtual = 0;
+                }
+
+                relato.setNumeroNoPerfil(maiorAtual + 1);
+                maiorNumeroPorIdoso.put(relato.getIdosoId(), relato.getNumeroNoPerfil());
+            }
+        }
+    }
+
+    private String converterRelatoParaLinha(Relato relato) {
+        long data = relato.getDataRegistro() == null ? System.currentTimeMillis() : relato.getDataRegistro().getTime();
+
+        return relato.getId()
+                + ";" + relato.getIdosoId()
+                + ";" + relato.getNumeroNoPerfil()
+                + ";" + data
+                + ";" + limpar(relato.getTextoBruto())
+                + ";" + limpar(relato.getCronicaGerada());
+    }
+
+    private Relato converterLinhaParaRelato(String linha) {
+        String[] partes = linha.split(";", -1);
+        Relato relato = new Relato();
+
+        relato.setId(Integer.parseInt(partes[0]));
+        relato.setIdosoId(Integer.parseInt(partes[1]));
+
+        if (partes.length >= 6) {
+            relato.setNumeroNoPerfil(Integer.parseInt(partes[2]));
+            relato.setDataRegistro(new Date(Long.parseLong(partes[3])));
+            relato.setTextoBruto(restaurar(partes[4]));
+            relato.setCronicaGerada(restaurar(partes[5]));
+        } else {
+            relato.setNumeroNoPerfil(0);
+            relato.setDataRegistro(new Date(Long.parseLong(partes[2])));
+            relato.setTextoBruto(restaurar(partes[3]));
+            relato.setCronicaGerada(restaurar(partes[4]));
+        }
+
+        return relato;
+    }
+
+    private String limpar(String texto) {
+        if (texto == null) {
+            return "";
+        }
+
+        return texto.replace("\\", "\\\\").replace("\n", "\\n").replace(";", "\\p");
+    }
+
+    private String restaurar(String texto) {
+        return texto.replace("\\p", ";").replace("\\n", "\n").replace("\\\\", "\\");
     }
 }

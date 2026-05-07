@@ -14,6 +14,7 @@ public class Relato {
     
     private int id;
     private int idosoId;
+    private int numeroNoPerfil;
     private String textoBruto;
     private String cronicaGerada;
     private Date dataRegistro;
@@ -45,6 +46,14 @@ public class Relato {
         this.idosoId = idosoId;
     }
 
+    public int getNumeroNoPerfil() {
+        return numeroNoPerfil;
+    }
+
+    public void setNumeroNoPerfil(int numeroNoPerfil) {
+        this.numeroNoPerfil = numeroNoPerfil;
+    }
+
     public String getTextoBruto() {
         return textoBruto;
     }
@@ -67,5 +76,11 @@ public class Relato {
 
     public void setDataRegistro(Date dataRegistro) {
         this.dataRegistro = dataRegistro;
+    }
+
+    @Override
+    public String toString() {
+        int numeroVisivel = numeroNoPerfil > 0 ? numeroNoPerfil : id;
+        return "Relato " + numeroVisivel;
     }
 }

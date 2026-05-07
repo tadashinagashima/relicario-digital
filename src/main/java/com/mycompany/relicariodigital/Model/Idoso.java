@@ -4,6 +4,7 @@
  */
 package com.mycompany.relicariodigital.Model;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
@@ -47,5 +48,16 @@ public class Idoso {
 
     public void setBiografiaBreve(String biografiaBreve) {
         this.biografiaBreve = biografiaBreve;
+    }
+
+    @Override
+    public String toString() {
+        String dataTexto = "";
+
+        if (dataNascimento != null) {
+            dataTexto = " - " + new SimpleDateFormat("dd/MM/yyyy").format(dataNascimento);
+        }
+
+        return id + " - " + nome + dataTexto;
     }
 }
