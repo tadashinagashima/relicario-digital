@@ -1,51 +1,48 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-package com.mycompany.relicariodigital.Controller;
+package com.mycompany.relicariodigital.controller;
 
-import com.mycompany.relicariodigital.DAO.RelatoDAO;
-import com.mycompany.relicariodigital.Model.Relato;
-import com.mycompany.relicariodigital.Service.GeminiService;
+import com.mycompany.relicariodigital.dao.RelatoDAO;
+import com.mycompany.relicariodigital.model.Relato;
+import com.mycompany.relicariodigital.service.GeminiService;
+import java.sql.SQLException;
 
-/**
- *
- * @author gyudi
- */
 public class EntrevistaController {
-    
-    private GeminiService geminiService;
-    private RelatoDAO relatoDAO;
-    
+
+    private final GeminiService geminiService;
+    private final RelatoDAO relatoDAO;
+
     public EntrevistaController() {
         this.geminiService = new GeminiService();
         this.relatoDAO = new RelatoDAO();
     }
-    
-    public Relato processarESalvarRelato(int idosoId, String textoBrutoDigitado) {
-        if (textoBrutoDigitado == null || textoBrutoDigitado.trim().isEmpty()) {
-            System.out.println("Aviso para a tela: O relato não pode estar vazio!");
-            return null;
-        }
 
-        System.out.println("Aviso para a tela: Processando com a Inteligência Artificial... Aguarde.");
+    public String gerarCronica(int idosoId, String textoBrutoDigitado) throws Exception {
+        validarIdoso(idosoId);
+        validarTexto(textoBrutoDigitado, "Digite o texto bruto da entrevista.");
+        return geminiService.processarHistoria(textoBrutoDigitado.trim());
+    }
 
-        String textoFormatadoPelaIA = geminiService.processarHistoria(textoBrutoDigitado);
-
-        if (textoFormatadoPelaIA.contains("erro")) {
-            System.out.println("Aviso para a tela: Falha na IA. Tente novamente.");
-            return null;
-        }
+    public Relato salvarRelato(int idosoId, String textoBrutoDigitado, String cronicaRevisada) throws SQLException {
+        validarIdoso(idosoId);
+        validarTexto(textoBrutoDigitado, "Digite o texto bruto da entrevista.");
+        validarTexto(cronicaRevisada, "Revise ou informe a cronica antes de salvar.");
 
         Relato novoRelato = new Relato();
         novoRelato.setIdosoId(idosoId);
-        novoRelato.setTextoBruto(textoBrutoDigitado);
-        novoRelato.setCronicaGerada(textoFormatadoPelaIA);
-        
-        relatoDAO.salvarRelato(novoRelato);
+        novoRelato.setTextoBruto(textoBrutoDigitado.trim());
+        novoRelato.setCronicaGerada(cronicaRevisada.trim());
 
-        System.out.println("Aviso para a tela: Sucesso! Crônica salva no acervo biográfico.");
+        return relatoDAO.salvar(novoRelato);
+    }
 
-        return novoRelato; 
+    private void validarIdoso(int idosoId) {
+        if (idosoId <= 0) {
+            throw new IllegalArgumentException("Selecione um idoso.");
+        }
+    }
+
+    private void validarTexto(String texto, String mensagem) {
+        if (texto == null || texto.trim().isEmpty()) {
+            throw new IllegalArgumentException(mensagem);
+        }
     }
 }

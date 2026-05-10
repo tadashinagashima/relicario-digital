@@ -1,91 +1,106 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-package com.mycompany.relicariodigital.DAO;
+package com.mycompany.relicariodigital.dao;
 
-import com.mycompany.relicariodigital.Model.Idoso;
-import com.mycompany.relicariodigital.Model.Relato;
+import com.mycompany.relicariodigital.model.Relato;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- *
- * @author gyudi
- */
-
-// OBS: Não necessariamente precisamos já implementar o update e o delete de relato.
-// É recomendável, mas em relato, o mais importante no momento é focar no create e no read.
 public class RelatoDAO {
-    
-    // Create
-    public void salvarRelato(Relato relato) {
-        //obs: os nomes das colunas devem ser confirmados com o Daniel (DB)
-        String sql = "INSERT INTO relatos (idoso_id, texto_bruto, cronica_gerada, data_registro) VALUES (?, ?, ?, ?)";
 
-        try (Connection conn = ConexaoBD.getConexao();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+    public Relato salvar(Relato relato) throws SQLException {
+        String sqlNumero = "SELECT COALESCE(MAX(numero), 0) + 1 AS proximo FROM relatos WHERE idoso_id = ?";
+        String sqlInsert = "INSERT INTO relatos (idoso_id, numero, texto_bruto, cronica_gerada) VALUES (?, ?, ?, ?)";
 
-            //preenchendo os parâmetros do SQL
-            stmt.setInt(1, relato.getIdosoId());
-            stmt.setString(2, relato.getTextoBruto());
-            stmt.setString(3, relato.getCronicaGerada());
-            //converte a data do java para o formato do banco 
-            stmt.setTimestamp(4, new java.sql.Timestamp(System.currentTimeMillis()));
+        try (Connection conn = ConexaoBD.getConexao()) {
+            conn.setAutoCommit(false);
 
-            stmt.executeUpdate();
-            System.out.println("[RF04] Sucesso: Relato salvo no banco de dados.");
+            try (PreparedStatement stmtNumero = conn.prepareStatement(sqlNumero);
+                 PreparedStatement stmtInsert = conn.prepareStatement(sqlInsert, Statement.RETURN_GENERATED_KEYS)) {
+                stmtNumero.setInt(1, relato.getIdosoId());
 
-        } catch (SQLException e) {
-            System.err.println("[RF04] Erro ao salvar relato: " + e.getMessage());
+                try (ResultSet rs = stmtNumero.executeQuery()) {
+                    if (rs.next()) {
+                        relato.setNumero(rs.getInt("proximo"));
+                    }
+                }
+
+                stmtInsert.setInt(1, relato.getIdosoId());
+                stmtInsert.setInt(2, relato.getNumero());
+                stmtInsert.setString(3, relato.getTextoBruto());
+                stmtInsert.setString(4, relato.getCronicaGerada());
+                stmtInsert.executeUpdate();
+
+                try (ResultSet rs = stmtInsert.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        relato.setId(rs.getInt(1));
+                    }
+                }
+
+                conn.commit();
+                return relato;
+            } catch (SQLException erro) {
+                conn.rollback();
+                throw erro;
+            } finally {
+                conn.setAutoCommit(true);
+            }
         }
     }
-    
-    // Read
-    public List<Relato> buscarPorIdoso(int idosoId) {
-        String sql = "SELECT * FROM relatos WHERE idoso_id = ?";
+
+    public List<Relato> buscarPorIdoso(int idosoId) throws SQLException {
+        String sql = "SELECT id, idoso_id, numero, texto_bruto, cronica_gerada, data_registro "
+                + "FROM relatos WHERE idoso_id = ? ORDER BY numero";
         List<Relato> listaRelatos = new ArrayList<>();
 
         try (Connection conn = ConexaoBD.getConexao();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-
             stmt.setInt(1, idosoId);
-            ResultSet rs = stmt.executeQuery();
 
-            while (rs.next()) {
-                Relato r = new Relato();
-                r.setId(rs.getInt("id"));
-                r.setIdosoId(rs.getInt("idoso_id"));
-                r.setTextoBruto(rs.getString("texto_bruto"));
-                r.setCronicaGerada(rs.getString("cronica_gerada"));
-                r.setDataRegistro(rs.getTimestamp("data_registro"));
-                listaRelatos.add(r);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    listaRelatos.add(mapearRelato(rs));
+                }
             }
-        } catch (SQLException e) {
-            System.err.println("Erro ao buscar relatos: " + e.getMessage());
         }
+
         return listaRelatos;
     }
-    
-    // Update
-    public void atualizarCronica(Idoso idoso) {
-        String sql = "";
-        
-        try() {
-            
-        } catch() {
-            
+
+    public int contarPorIdoso(int idosoId) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM relatos WHERE idoso_id = ?";
+
+        try (Connection conn = ConexaoBD.getConexao();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, idosoId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
         }
+
+        return 0;
     }
-    
-    // Delete
-    public void deletarRelato(int id) {
-        String sql = "";
-        
-        try() {
-            
-        } catch() {
-            
+
+    private Relato mapearRelato(ResultSet rs) throws SQLException {
+        Relato relato = new Relato();
+        relato.setId(rs.getInt("id"));
+        relato.setIdosoId(rs.getInt("idoso_id"));
+        relato.setNumero(rs.getInt("numero"));
+        relato.setTextoBruto(rs.getString("texto_bruto"));
+        relato.setCronicaGerada(rs.getString("cronica_gerada"));
+
+        Timestamp dataRegistro = rs.getTimestamp("data_registro");
+        if (dataRegistro != null) {
+            relato.setDataRegistro(dataRegistro.toLocalDateTime());
         }
+
+        return relato;
     }
 }

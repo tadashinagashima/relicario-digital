@@ -1,32 +1,25 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-package com.mycompany.relicariodigital.Model;
+package com.mycompany.relicariodigital.model;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
-/**
- *
- * @author gyudi
- */
 public class Relato {
-    
+
     private int id;
     private int idosoId;
+    private int numero;
     private String textoBruto;
     private String cronicaGerada;
-    private Date dataRegistro;
+    private LocalDateTime dataRegistro;
 
-    //construtor padrão para o DAO
-    public Relato() {}
+    public Relato() {
+    }
 
-    //construtor para testes com dummy data
-    public Relato(int idosoId, String textoBruto, String cronicaGerada) {
+    public Relato(int idosoId, int numero, String textoBruto, String cronicaGerada) {
         this.idosoId = idosoId;
+        this.numero = numero;
         this.textoBruto = textoBruto;
         this.cronicaGerada = cronicaGerada;
-        this.dataRegistro = new Date();
+        this.dataRegistro = LocalDateTime.now();
     }
 
     public int getId() {
@@ -45,6 +38,14 @@ public class Relato {
         this.idosoId = idosoId;
     }
 
+    public int getNumero() {
+        return numero;
+    }
+
+    public void setNumero(int numero) {
+        this.numero = numero;
+    }
+
     public String getTextoBruto() {
         return textoBruto;
     }
@@ -61,11 +62,16 @@ public class Relato {
         this.cronicaGerada = cronicaGerada;
     }
 
-    public Date getDataRegistro() {
+    public LocalDateTime getDataRegistro() {
         return dataRegistro;
     }
 
-    public void setDataRegistro(Date dataRegistro) {
+    public void setDataRegistro(LocalDateTime dataRegistro) {
         this.dataRegistro = dataRegistro;
+    }
+
+    @Override
+    public String toString() {
+        return "Relato " + numero;
     }
 }

@@ -1,36 +1,37 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-package com.mycompany.relicariodigital.Controller;
+package com.mycompany.relicariodigital.controller;
 
-import com.mycompany.relicariodigital.DAO.IdosoDAO;
-import com.mycompany.relicariodigital.DAO.RelatoDAO;
-import com.mycompany.relicariodigital.Model.Idoso;
-import com.mycompany.relicariodigital.Model.Relato;
+import com.mycompany.relicariodigital.dao.IdosoDAO;
+import com.mycompany.relicariodigital.dao.RelatoDAO;
+import com.mycompany.relicariodigital.model.Idoso;
+import com.mycompany.relicariodigital.model.Relato;
+import java.sql.SQLException;
 import java.util.List;
 
-/**
- *
- * @author gyudi
- */
 public class AcervoController {
-    
-    private IdosoDAO idosoDAO;
-    private RelatoDAO relatoDAO;
-    
+
+    private final IdosoDAO idosoDAO;
+    private final RelatoDAO relatoDAO;
+
     public AcervoController() {
         this.idosoDAO = new IdosoDAO();
         this.relatoDAO = new RelatoDAO();
     }
-    
-    public List<Idoso> carregarListaDeParticipantes() {
+
+    public List<Idoso> carregarListaDeParticipantes() throws SQLException {
         return idosoDAO.listarTodos();
     }
-    
-    public List<Relato> buscarHistoriasDoIdoso(int idosoEscolhido) {
-        
+
+    public List<Idoso> buscarParticipantes(String termo) throws SQLException {
+        if (termo == null || termo.trim().isEmpty()) {
+            return carregarListaDeParticipantes();
+        }
+        return idosoDAO.buscarPorNome(termo.trim());
     }
-    
-    // Extra - public void exportarCronica(Relato relatoEscolhido);
+
+    public List<Relato> buscarHistoriasDoIdoso(int idosoEscolhido) throws SQLException {
+        if (idosoEscolhido <= 0) {
+            throw new IllegalArgumentException("Selecione um idoso.");
+        }
+        return relatoDAO.buscarPorIdoso(idosoEscolhido);
+    }
 }

@@ -1,21 +1,23 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-package com.mycompany.relicariodigital.Model;
+package com.mycompany.relicariodigital.model;
 
-import java.util.Date;
+import java.time.LocalDate;
 
-/**
- *
- * @author gyudi
- */
 public class Idoso {
-    
+
     private int id;
     private String nome;
-    private Date dataNascimento;
+    private LocalDate dataNascimento;
     private String biografiaBreve;
+
+    public Idoso() {
+    }
+
+    public Idoso(int id, String nome, LocalDate dataNascimento, String biografiaBreve) {
+        this.id = id;
+        this.nome = nome;
+        this.dataNascimento = dataNascimento;
+        this.biografiaBreve = biografiaBreve;
+    }
 
     public int getId() {
         return id;
@@ -33,11 +35,11 @@ public class Idoso {
         this.nome = nome;
     }
 
-    public Date getDataNascimento() {
+    public LocalDate getDataNascimento() {
         return dataNascimento;
     }
 
-    public void setDataNascimento(Date dataNascimento) {
+    public void setDataNascimento(LocalDate dataNascimento) {
         this.dataNascimento = dataNascimento;
     }
 
@@ -47,5 +49,13 @@ public class Idoso {
 
     public void setBiografiaBreve(String biografiaBreve) {
         this.biografiaBreve = biografiaBreve;
+    }
+
+    @Override
+    public String toString() {
+        if (id > 0) {
+            return nome + " (ID " + id + ")";
+        }
+        return nome;
     }
 }
