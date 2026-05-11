@@ -1,0 +1,7 @@
+db.url=jdbc:postgresql://localhost:5432/relicario_digital
+db.user=postgres
+db.password=postgres
+
+gemini.api.key=SUA_CHAVE_DA_API_GEMINI
+gemini.model=gemini-1.5-flash
+gemini.max.output.tokens=4096
